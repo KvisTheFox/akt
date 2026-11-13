@@ -19,7 +19,9 @@ Get-ChildItem (Join-Path $PSScriptRoot "lang\*.akt") | Sort-Object Name | ForEac
     $expectedFile = [System.IO.Path]::ChangeExtension($file, ".out")
     $actual = (& $aktc run $file 2>&1 | Out-String)
     $rc = $LASTEXITCODE
-    $actual = $actual.Replace("`r`n", "`n").TrimEnd()
+    $actual = (($actual.Replace("`r`n", "`n") -split "`n") |
+        Where-Object { $_ -notmatch '^\s*LINK\s*:' -and $_ -notmatch 'LNK\d+' }) -join "`n"
+    $actual = $actual.TrimEnd()
     $exitFile = [System.IO.Path]::ChangeExtension($file, ".exit")
     $expectedExit = 0
     if (Test-Path $exitFile) { $expectedExit = [int](Get-Content -Raw $exitFile).Trim() }

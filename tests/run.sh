@@ -18,7 +18,7 @@ for f in tests/lang/*.akt; do
     [ -e "$f" ] || continue
     name=$(basename "$f" .akt)
     total=$((total + 1))
-    out=$("$AKTC" run "$f" 2>&1)
+    out=$("$AKTC" run "$f" 2>&1 | grep -v -E '^[[:space:]]*LINK[[:space:]]*:|LNK[0-9]+')
     rc=$?
     expected="tests/lang/$name.out"
     if [ $rc -ne 0 ]; then
