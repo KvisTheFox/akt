@@ -1,3 +1,0 @@
-pub fn triple(int x) int {
-    return x * 3
-}

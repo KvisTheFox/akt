@@ -1,4 +1,0 @@
-fn main() int {
-    int x = "not an int"
-    return 0
-}

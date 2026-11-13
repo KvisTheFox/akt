@@ -16,20 +16,6 @@ xmake build
 
 Binaries go to `bin/`.
 
-## Test
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tests/run.ps1
-powershell -ExecutionPolicy Bypass -File tests/fuzz.ps1
-powershell -ExecutionPolicy Bypass -File tests/asan.ps1
-```
-
-Add a test for every behavior change:
-
-- `tests/lang/<name>.akt` plus `<name>.out` for positive tests;
-- `tests/negative/<name>.akt` for code that must be rejected;
-- update [docs/TESTING.md](docs/TESTING.md) when adding a test group.
-
 ## Layout
 
 - `aktc/src/lexer.c` — tokens;

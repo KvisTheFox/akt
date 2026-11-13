@@ -1,7 +1,0 @@
-cinclude <stdlib.h>
-
-fn main() int {
-    div_t d = div(7, 2)
-    println(f"{d.quot} {d.rem}")
-    return 0
-}

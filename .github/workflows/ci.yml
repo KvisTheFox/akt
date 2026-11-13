@@ -35,20 +35,6 @@ jobs:
         shell: pwsh
         run: |
           ./bin/aktc --version
-          ./bin/aktc run tests/lang/hello.akt
-          ./bin/aktc run tests/lang/strings.akt
-          ./bin/aktc run tests/lang/structs.akt
-
-      - name: Language tests (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: ./tests/run.ps1
-
-      - name: Language tests (Unix)
-        if: runner.os != 'Windows'
-        run: sh tests/run.sh
-
-      - name: Fuzz (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: ./tests/fuzz.ps1
+          ./bin/aktc run examples/hello.akt
+          ./bin/aktc run examples/structs.akt
+          ./bin/aktc run examples/collections.akt

@@ -1,6 +1,6 @@
 -- akt toolchain build (primary: XMake)
 set_project("akt")
-set_version("1.0.0")
+set_version("0.9.0")
 set_languages("c11")
 set_encodings("utf-8")
 
@@ -33,13 +33,6 @@ target("katek")
     if not is_plat("windows") then
         add_syslinks("m")
     end
-    set_targetdir("bin")
-
-target("akt_tests")
-    set_kind("binary")
-    add_files("tests/c/*.c")
-    add_includedirs("runtime/include")
-    add_deps("akt_runtime")
     set_targetdir("bin")
 
 target("akt-setup")

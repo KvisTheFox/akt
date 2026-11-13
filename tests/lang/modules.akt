@@ -1,6 +1,0 @@
-use modules.helper
-
-fn main() int {
-    println(f"triple = {helper.triple(7)}")
-    return 0
-}

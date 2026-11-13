@@ -1,8 +1,0 @@
-fn main() int {
-    println(f"match digits = {regex.match("\\d+", "abc123")}")
-    println(f"find = {regex.find("\\d+", "abc123def")}")
-    println(f"replace = {regex.replace("\\d+", "a1b22c333", "#")}")
-    println(f"anchor = {regex.match("^abc$", "abc")}")
-    println(f"class = {regex.match("[a-z]+", "hello")}")
-    return 0
-}

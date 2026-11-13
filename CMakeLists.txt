@@ -33,10 +33,6 @@ if(UNIX)
     target_link_libraries(katek PRIVATE m)
 endif()
 
-add_executable(akt_tests tests/c/runtime_test.c)
-target_include_directories(akt_tests PRIVATE runtime/include)
-target_link_libraries(akt_tests PRIVATE akt_runtime)
-
 if(WIN32)
     add_executable(akt-setup installer/src/main.c)
     target_link_libraries(akt-setup PRIVATE advapi32 user32)

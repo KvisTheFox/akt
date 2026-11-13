@@ -29,8 +29,7 @@
   `lock`, `jni`, `c add/sync/install`, `export xmake|cmake`,
   Android NDK.
 - Release-кодогенерация: `-O3 -march=native -flto -fuse-ld=lld`.
-- Бенчмарки против C/C++/Rust/Zig, сквозные тесты, fuzz и ASan/UBSan.
-  Результаты: [`benchmarks/RESULTS.md`](benchmarks/RESULTS.md).
+- Release-кодогенерация: `-O3 -march=native -flto -fuse-ld=lld`.
 
 Ограничения 1.0: нет дженериков кроме `Vector`/`Map`/`Set`/`Deque`,
 async выполняется на потоках (без отдельного executor), нет полного
@@ -40,17 +39,17 @@ async выполняется на потоках (без отдельного ex
 
 ## Установка
 
-Windows: скачайте `akt-1.0.0-setup.exe` и запустите.
+Windows: скачайте `akt-0.9.0-setup.exe` и запустите.
 
 Установщик проверит Clang и, если его нет, спросит, скачать ли LLVM.
 Всё ставится в `%LOCALAPPDATA%\akt`, `bin` добавляется в PATH.
 
 ```powershell
-akt-1.0.0-setup.exe
-akt-1.0.0-setup.exe --quiet --no-llvm --prefix D:\akt
+akt-0.9.0-setup.exe
+akt-0.9.0-setup.exe --quiet --no-llvm --prefix D:\akt
 ```
 
-Linux/macOS: `akt-1.0.0-src.tar.gz` + `scripts/install.sh`.
+Linux/macOS: `akt-0.9.0-src.tar.gz` + `scripts/install.sh`.
 
 Пример 3D-игры на GLFW: [`examples/game3d`](examples/game3d).
 
@@ -132,7 +131,6 @@ akt/
 ├── runtime/     C-рантайм (строки, vector, arena, IO)
 ├── std/         будущие akt-модули std
 ├── examples/    примеры
-├── tests/       позитивные, негативные, C-тесты
 ├── docs/        документация
 ├── docs/design/ спецификация языка
 ├── xmake.lua

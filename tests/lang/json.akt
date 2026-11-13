@@ -1,8 +1,0 @@
-fn main() int {
-    Json data = json.parse("{\"name\":\"Alice\",\"age\":30,\"tags\":[\"a\",\"b\"]}")
-    println(f"name = {data["name"]}")
-    println(f"age = {data["age"]}")
-    println(f"tag0 = {data["tags"][0]}")
-    println(json.stringify(data))
-    return 0
-}

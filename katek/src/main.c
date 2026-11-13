@@ -20,7 +20,7 @@
 #define AKT_ROOT "."
 #endif
 
-#define KATEK_VERSION "1.0.0"
+#define KATEK_VERSION "0.9.0"
 
 static char *fmt(const char *f, ...);
 
@@ -161,9 +161,9 @@ static void cmd_new(const char *name, int bare, int lib) {
     if (!bare) {
         char *mf = join_path(name, "katek.toml");
         char *manifest = lib ? fmt(
-            "[package]\nname = \"%s\"\nversion = \"1.0.0\"\nedition = \"2026\"\n\n"
+            "[package]\nname = \"%s\"\nversion = \"0.9.0\"\nedition = \"2026\"\n\n"
             "[targets.lib]\nkind = \"library\"\nsrc = \"src/lib.akt\"\n", name) : fmt(
-            "[package]\nname = \"%s\"\nversion = \"1.0.0\"\nedition = \"2026\"\n\n"
+            "[package]\nname = \"%s\"\nversion = \"0.9.0\"\nedition = \"2026\"\n\n"
             "[build]\nbackend = \"internal\"\n", name);
         write_file(mf, manifest);
         free(mf); free(manifest);
@@ -363,6 +363,46 @@ static char *xrepo_package_root(void) {
     return NULL;
 }
 
+static void xrepo_add_libs(char **flags, const char *libdir) {
+#ifdef _WIN32
+    char pat[4096];
+    snprintf(pat, sizeof(pat), "%s/*", libdir);
+    WIN32_FIND_DATAA fd;
+    HANDLE h = FindFirstFileA(pat, &fd);
+    if (h == INVALID_HANDLE_VALUE) return;
+    do {
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
+        char *dot = strrchr(fd.cFileName, '.');
+        if (!dot) continue;
+        if (strcmp(dot, ".lib") != 0 && strcmp(dot, ".a") != 0) continue;
+        char base[512];
+        snprintf(base, sizeof(base), "%s", fd.cFileName);
+        base[dot - fd.cFileName] = 0;
+        char *name = base;
+        if (strncmp(name, "lib", 3) == 0) name += 3;
+        *flags = appendf(*flags, " -l%s", name);
+    } while (FindNextFileA(h, &fd));
+    FindClose(h);
+#else
+    DIR *d = opendir(libdir);
+    if (!d) return;
+    struct dirent *e;
+    while ((e = readdir(d))) {
+        const char *dot = strrchr(e->d_name, '.');
+        if (!dot) continue;
+        if (strcmp(dot, ".a") != 0 && strcmp(dot, ".so") != 0) continue;
+        char base[512];
+        snprintf(base, sizeof(base), "%s", e->d_name);
+        base[dot - e->d_name] = 0;
+        char *name = base;
+        if (strncmp(name, "lib", 3) == 0) name += 3;
+        if (strchr(name, '.')) continue;
+        *flags = appendf(*flags, " -l%s", name);
+    }
+    closedir(d);
+#endif
+}
+
 static void xrepo_add_flags(char **flags, const char *name, const char *version) {
     char *root = xrepo_package_root();
     if (!root || !name || !name[0]) { free(root); return; }
@@ -384,7 +424,10 @@ static void xrepo_add_flags(char **flags, const char *name, const char *version)
             char *lib = fmt("%s/lib", hdir);
             if (dir_exists(inc) || dir_exists(lib)) {
                 if (dir_exists(inc)) *flags = appendf(*flags, " -I\"%s\"", inc);
-                if (dir_exists(lib)) *flags = appendf(*flags, " -L\"%s\"", lib);
+                if (dir_exists(lib)) {
+                    *flags = appendf(*flags, " -L\"%s\"", lib);
+                    xrepo_add_libs(flags, lib);
+                }
                 done = 1;
             }
             free(inc);
@@ -415,6 +458,7 @@ static char *manifest_flags(const char *root) {
         if (s[0] == '[') {
             if (strncmp(s, "[native.dependencies]", 21) == 0) section = 2;
             else if (strncmp(s, "[native]", 8) == 0) section = 1;
+            else if (strncmp(s, "[dependencies]", 14) == 0) section = 3;
             else section = 0;
             continue;
         }
@@ -441,12 +485,22 @@ static char *manifest_flags(const char *root) {
                     flags = appendf(flags, " %s%s", prefix, p + 1);
                 p = e + 1;
             }
-        } else if (section == 2) {
+        } else if (section == 2 || section == 3) {
             char *eq = strchr(s, '=');
             if (!eq) continue;
             *eq = 0;
             char *name = trim(s);
             char *body = eq + 1;
+            while (*body == ' ' || *body == '\t') body++;
+            if (section == 3 && body[0] == '"') {
+                char *q2 = strchr(body + 1, '"');
+                if (q2) {
+                    *q2 = 0;
+                    xrepo_add_flags(&flags, name, body + 1);
+                    *q2 = '"';
+                }
+                continue;
+            }
             char *prov = strstr(body, "provider");
             if (prov && strstr(prov, "\"xrepo\"")) {
                 char ver[64] = "";
@@ -592,7 +646,47 @@ static int cmd_build(const char *root, int release, int run_after, const char *t
     }
     char *aktc = find_aktc();
     char *aktc_a = arg_quote(aktc);
+
+    /* optional build script: build.akt in the project root */
+    char *script = join_path(root, "build.akt");
+    if (exists(script)) {
+        printf("running build script: %s\n", script);
+        char *scmd = fmt("%s run \"%s\"", aktc_a, script);
+        if (run_cmd(scmd) != 0) {
+            fprintf(stderr, "katek: build script failed\n");
+            free(scmd); free(script); free(aktc_a); free(aktc);
+            free(src); free(main); free(target); free(out);
+            free(cc); free(sysroot); free(triple); free(ndk);
+            return 1;
+        }
+        free(scmd);
+    }
+    free(script);
+
+    /* optional pre-build command from [build] pre = "..." */
+    char *pre = manifest_value(root, "pre", "");
+    if (pre && pre[0]) {
+        printf("pre-build: %s\n", pre);
+        if (run_cmd(pre) != 0) {
+            fprintf(stderr, "katek: pre-build command failed\n");
+            free(pre); free(aktc_a); free(aktc);
+            free(src); free(main); free(target); free(out);
+            free(cc); free(sysroot); free(triple); free(ndk);
+            return 1;
+        }
+    }
+    free(pre);
+
     char *flags = manifest_flags(root);
+    char *extra_file = join_path(root, ".kache/extra.flags");
+    char *extra = read_small(extra_file);
+    free(extra_file);
+    if (extra && extra[0]) {
+        char *all = fmt("%s %s", flags ? flags : "", extra);
+        free(flags);
+        flags = all;
+    }
+    free(extra);
     char *tflag = triple ? fmt(" --target %s", triple) : fmt("");
     char *sflag = sysroot ? fmt(" --sysroot \"%s\"", sysroot) : fmt("");
     char *cflag = cc ? fmt(" --cc \"%s\"", cc) : fmt("");
@@ -602,6 +696,14 @@ static int cmd_build(const char *root, int release, int run_after, const char *t
                     flags ? flags : "");
     int rc = run_cmd(cmd);
     free(cmd); free(aktc_a); free(flags); free(tflag); free(sflag); free(cflag); free(shflag);
+    if (rc == 0) {
+        char *post = manifest_value(root, "post", "");
+        if (post && post[0]) {
+            printf("post-build: %s\n", post);
+            run_cmd(post);
+        }
+        free(post);
+    }
     if (rc == 0 && run_after && !shared) {
         char *q = arg_quote(out);
         rc = run_cmd(q);

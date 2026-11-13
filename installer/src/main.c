@@ -4,7 +4,7 @@
 #include <io.h>
 #include <windows.h>
 
-#define AKT_VERSION_TEXT "1.0.0"
+#define AKT_VERSION_TEXT "0.9.0"
 #define PAYLOAD_MAGIC "AKTPAYLOAD1"
 #define LLVM_INSTALLER_URL \
     "https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/LLVM-18.1.8-win64.exe"

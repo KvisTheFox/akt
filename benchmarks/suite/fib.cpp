@@ -1,4 +1,0 @@
-#include <cstdio>
-#include <cstdint>
-static int64_t fib(int64_t n) { return n < 2 ? n : fib(n - 1) + fib(n - 2); }
-int main() { std::printf("fib %lld\n", (long long)fib(32)); return 0; }

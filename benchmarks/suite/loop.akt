@@ -1,8 +1,0 @@
-fn main() int {
-    i64 sum = 0
-    for (i in 0..100000000) {
-        sum += (i * 3 + 1) % 7
-    }
-    println(f"loop {sum}")
-    return 0
-}

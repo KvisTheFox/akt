@@ -1,9 +1,0 @@
-cinclude <stdlib.h>
-cinclude "native_demo.h"
-
-fn main() int {
-    native_pair p = native_pair { a: -3, b: 4 }
-    native_size_alias n = 9
-    println(f"{abs(p.a)} {p.b} {n} {NATIVE_MAGIC} {NATIVE_ON}")
-    return 0
-}

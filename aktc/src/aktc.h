@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define AKT_VERSION "1.0.0"
+#define AKT_VERSION "0.9.0"
 
 typedef enum {
     TK_EOF = 0,

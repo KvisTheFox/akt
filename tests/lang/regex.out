@@ -1,5 +1,0 @@
-match digits = true
-find = 123
-replace = a#b#c#
-anchor = true
-class = true

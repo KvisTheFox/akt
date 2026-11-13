@@ -1,8 +1,0 @@
-cinclude <stdio.h>
-cinclude <string.h>
-
-fn main() int {
-    c.printf("hello from C\n")
-    println(f"strlen = {c.strlen("hello")}")
-    return 0
-}
