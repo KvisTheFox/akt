@@ -98,6 +98,11 @@ static Type *t_f64(void) { return type_named("f64"); }
 static Type *t_bool(void) { return type_named("bool"); }
 static Type *t_string(void) { return type_named("string"); }
 static Type *t_void(void) { return type_named("void"); }
+static int is_managed_type(Program *p, Type *t) {
+    if (!t || t->kind != TY_NAMED || !t->name) return 0;
+    StructDecl *s = find_struct(p, t->name);
+    return s && s->is_managed;
+}
 
 static void require_assignable(Checker *c, Type *target, Type *value, Expr *e, const char *what) {
     (void)c;
@@ -517,6 +522,8 @@ static Type *check_expr(Checker *c, Expr *e) {
                              f->name, f->nparams, e->as.call.argc);
                 for (int i = 0; i < e->as.call.argc; i++) {
                     Type *at = check_expr(c, e->as.call.args[i]);
+                    if (is_managed_type(c->prog, at))
+                        fatal_at(c->prog->file, e->line, e->col, "managed values cannot be passed by value");
                     require_assignable(c, f->params[i].type, at, e->as.call.args[i], "argument");
                 }
                 e->type = f->is_async ? type_task(f->ret) : f->ret;
@@ -524,7 +531,26 @@ static Type *check_expr(Checker *c, Expr *e) {
             }
             if (callee->kind == EX_MEMBER) {
                 Expr *obj = callee->as.member.obj;
-                if (obj->kind == EX_IDENT && is_builtin_module(obj->as.sval)) {
+                if (obj->kind == EX_IDENT) {
+                    StructDecl *ms = find_struct(c->prog, obj->as.sval);
+                    if (ms && ms->is_managed && strcmp(callee->as.member.name, "new") == 0) {
+                        if (e->as.call.argc != ms->nfields)
+                            fatal_at(c->prog->file, e->line, e->col,
+                                     "%s::new expects %d arguments, got %d",
+                                     ms->name, ms->nfields, e->as.call.argc);
+                        for (int i = 0; i < e->as.call.argc; i++) {
+                            Type *at = check_expr(c, e->as.call.args[i]);
+                            if (is_managed_type(c->prog, at))
+                                fatal_at(c->prog->file, e->line, e->col,
+                                         "managed values cannot be passed by value");
+                            require_assignable(c, ms->fields[i].type, at, e->as.call.args[i], "argument");
+                        }
+                        e->type = type_named(ms->name);
+                        return e->type;
+                    }
+                }
+                if (obj->kind == EX_IDENT && is_builtin_module(obj->as.sval) &&
+                    !scope_find(c->scope, obj->as.sval)) {
                     e->type = check_module_call(c, obj->as.sval, callee->as.member.name,
                                                 e->as.call.args, e->as.call.argc, e);
                     return e->type;
@@ -538,6 +564,8 @@ static Type *check_expr(Checker *c, Expr *e) {
                                      gf->name, gf->nparams, e->as.call.argc);
                         for (int i = 0; i < e->as.call.argc; i++) {
                             Type *at = check_expr(c, e->as.call.args[i]);
+                            if (is_managed_type(c->prog, at))
+                                fatal_at(c->prog->file, e->line, e->col, "managed values cannot be passed by value");
                             require_assignable(c, gf->params[i].type, at, e->as.call.args[i], "argument");
                         }
                         e->type = gf->ret;
@@ -591,6 +619,8 @@ static Type *check_expr(Checker *c, Expr *e) {
                                      gf->name, gf->nparams, e->as.call.argc);
                         for (int i = 0; i < e->as.call.argc; i++) {
                             Type *at = check_expr(c, e->as.call.args[i]);
+                            if (is_managed_type(c->prog, at))
+                                fatal_at(c->prog->file, e->line, e->col, "managed values cannot be passed by value");
                             require_assignable(c, gf->params[i].type, at, e->as.call.args[i], "argument");
                         }
                         e->type = gf->ret;
@@ -620,6 +650,8 @@ static Type *check_expr(Checker *c, Expr *e) {
                                  m->name, m->nparams, e->as.call.argc);
                     for (int i = 0; i < e->as.call.argc; i++) {
                         Type *at = check_expr(c, e->as.call.args[i]);
+                        if (is_managed_type(c->prog, at))
+                            fatal_at(c->prog->file, e->line, e->col, "managed values cannot be passed by value");
                         require_assignable(c, m->params[i].type, at, e->as.call.args[i], "argument");
                     }
                     e->type = m->ret;
@@ -814,12 +846,29 @@ static Type *check_expr(Checker *c, Expr *e) {
                 }
                 StructDecl *sd = find_struct(c->prog, callee->as.path.type_name);
                 if (sd) {
+                    if (sd->is_managed && strcmp(callee->as.path.name, "new") == 0) {
+                        if (e->as.call.argc != sd->nfields)
+                            fatal_at(c->prog->file, e->line, e->col,
+                                     "%s::new expects %d arguments, got %d",
+                                     sd->name, sd->nfields, e->as.call.argc);
+                        for (int i = 0; i < e->as.call.argc; i++) {
+                            Type *at = check_expr(c, e->as.call.args[i]);
+                            if (is_managed_type(c->prog, at))
+                                fatal_at(c->prog->file, e->line, e->col,
+                                         "managed values cannot be passed by value");
+                            require_assignable(c, sd->fields[i].type, at, e->as.call.args[i], "argument");
+                        }
+                        e->type = type_named(sd->name);
+                        return e->type;
+                    }
                     Func *m = find_method(sd, callee->as.path.name);
                     if (!m || !m->is_static)
                         fatal_at(c->prog->file, e->line, e->col, "unknown associated function %s::%s",
                                  callee->as.path.type_name, callee->as.path.name);
                     for (int i = 0; i < e->as.call.argc; i++) {
                         Type *at = check_expr(c, e->as.call.args[i]);
+                        if (is_managed_type(c->prog, at))
+                            fatal_at(c->prog->file, e->line, e->col, "managed values cannot be passed by value");
                         require_assignable(c, m->params[i].type, at, e->as.call.args[i], "argument");
                     }
                     e->type = m->ret;
@@ -982,6 +1031,10 @@ static void check_stmt(Checker *c, Stmt *s) {
                 declared = t;
             } else if (s->as.var.init) {
                 Type *it = check_expr(c, s->as.var.init);
+                if (is_managed_type(c->prog, base) && is_managed_type(c->prog, it) &&
+                    s->as.var.init->kind == EX_IDENT)
+                    fatal_at(c->prog->file, s->line, s->col,
+                             "managed values cannot be copied; move them or return them instead");
                 require_assignable(c, base, it, s->as.var.init, "initializer");
             }
             s->as.var.type = declared;
@@ -991,6 +1044,10 @@ static void check_stmt(Checker *c, Stmt *s) {
         case ST_ASSIGN: {
             Type *tt = check_expr(c, s->as.assign.target);
             Type *vt = check_expr(c, s->as.assign.value);
+            if (is_managed_type(c->prog, tt) && is_managed_type(c->prog, vt) &&
+                s->as.assign.value->kind == EX_IDENT)
+                fatal_at(c->prog->file, s->line, s->col,
+                         "managed values cannot be copied; move them or return them instead");
             require_assignable(c, tt, vt, s->as.assign.value, "assignment");
             break;
         }
@@ -1161,6 +1218,12 @@ int check_program(Program *prog) {
     for (int i = 0; i < prog->nfuncs; i++) check_func(&c, prog->funcs[i]);
     for (int i = 0; i < prog->nstructs; i++) {
         StructDecl *s = prog->structs[i];
+        for (int j = 0; j < s->nfields; j++) {
+            if (is_managed_type(prog, s->fields[j].type))
+                fatal_at(prog->file, 0, 0,
+                         "managed field '%s.%s' is not allowed: managed objects cannot form cycles",
+                         s->name, s->fields[j].name);
+        }
         for (int j = 0; j < s->nmethods; j++) check_func(&c, s->methods[j]);
     }
     return 0;

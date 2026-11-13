@@ -68,6 +68,8 @@ typedef struct {
     int tmp;
     GVar vars[256];
     int nvars;
+    char *moved[128];
+    int nmoved;
     int varmarks[64];
     int nmarks;
     ThrRec thr[64];
@@ -103,6 +105,18 @@ static void line(Gen *g, const char *fmt, ...) {
     fputc('\n', g->out);
 }
 
+static const char *g_managed[128];
+static int g_nmanaged = 0;
+
+static int is_managed_name(const char *n) {
+    if (!n) return 0;
+    for (int i = 0; i < g_nmanaged; i++)
+        if (strcmp(g_managed[i], n) == 0) return 1;
+    return 0;
+}
+
+static StructDecl *find_struct_cg(Program *p, const char *name);
+
 static const char *c_type(Type *t) {
     if (!t) return "void";
     switch (t->kind) {
@@ -123,6 +137,7 @@ static const char *c_type(Type *t) {
         case TY_CHAR: return "uint32_t";
         case TY_CCHAR: return "char";
         case TY_NAMED:
+            if (t->name && is_managed_name(t->name)) return "AktShared*";
             if (t->name && strcmp(t->name, "arena") == 0) return "AktArena";
             if (t->name && strcmp(t->name, "cstring") == 0) return "const char*";
             if (t->name && strcmp(t->name, "size") == 0) return "size_t";
@@ -450,7 +465,7 @@ static char *gen_call(Gen *g, Expr *e) {
     if (callee->kind == EX_MEMBER) {
         Expr *obj = callee->as.member.obj;
         const char *mn = callee->as.member.name;
-        if (obj->kind == EX_IDENT) {
+        if (obj->kind == EX_IDENT && !decl_type(g, obj->as.sval)) {
             const char *mod = obj->as.sval;
             if (strcmp(mod, "io") == 0) {
                 if (strcmp(mn, "read_to_string") == 0 || strcmp(mn, "read_file") == 0) {
@@ -699,6 +714,22 @@ static char *gen_call(Gen *g, Expr *e) {
                     ct, id, id, obj->as.sval, id, ct, id, id);
             return b.data;
         }
+        if (obj->kind == EX_IDENT && is_managed_name(obj->as.sval) && strcmp(mn, "new") == 0) {
+            StructDecl *sd = find_struct_cg(g->prog, obj->as.sval);
+            const char *tn = sd ? sd->name : obj->as.sval;
+            int id = g->tmp++;
+            if (e->as.call.argc > 0) {
+                bprintf(&b, "({ %s_s _tmp%d = {", tn, id);
+                for (int i = 0; i < e->as.call.argc; i++) {
+                    if (i) bput(&b, ", ");
+                    bput(&b, gen_expr(g, e->as.call.args[i]));
+                }
+                bprintf(&b, "}; akt_shared_new(sizeof(%s_s), &_tmp%d); })", tn, id);
+            } else {
+                bprintf(&b, "akt_shared_new(sizeof(%s_s), NULL)", tn);
+            }
+            return b.data;
+        }
         if (!ot && obj->kind == EX_IDENT) {
             bprintf(&b, "%s(", mn);
             for (int i = 0; i < e->as.call.argc; i++) {
@@ -732,6 +763,18 @@ static char *gen_call(Gen *g, Expr *e) {
             else if (strcmp(mn, "fetch_add") == 0) bprintf(&b, "akt_atomic_add(%s, (int64_t)(%s))", o, gen_expr(g, e->as.call.args[0]));
             else bput(&b, "0");
             free(o);
+            return b.data;
+        }
+        if (ot && ot->kind == TY_NAMED && is_managed_name(ot->name)) {
+            const char *tn = ot->name;
+            const char *dot = strrchr(tn, '.');
+            if (dot) tn = dot + 1;
+            bprintf(&b, "%s_%s((( %s_s*)akt_shared_get(%s))", tn, mn, tn, gen_expr(g, obj));
+            for (int i = 0; i < e->as.call.argc; i++) {
+                bput(&b, ", ");
+                bput(&b, gen_expr(g, e->as.call.args[i]));
+            }
+            bput(&b, ")");
             return b.data;
         }
         if (ot && (ot->kind == TY_REF || ot->kind == TY_PTR)) ot = ot->elem;
@@ -920,6 +963,22 @@ static char *gen_call(Gen *g, Expr *e) {
         }
     }
     if (callee->kind == EX_STATIC) {
+        if (is_managed_name(callee->as.path.type_name) &&
+            strcmp(callee->as.path.name, "new") == 0) {
+            const char *tn = callee->as.path.type_name;
+            int id = g->tmp++;
+            if (e->as.call.argc > 0) {
+                bprintf(&b, "({ %s_s _tmp%d = {", tn, id);
+                for (int i = 0; i < e->as.call.argc; i++) {
+                    if (i) bput(&b, ", ");
+                    bput(&b, gen_expr(g, e->as.call.args[i]));
+                }
+                bprintf(&b, "}; akt_shared_new(sizeof(%s_s), &_tmp%d); })", tn, id);
+            } else {
+                bprintf(&b, "akt_shared_new(sizeof(%s_s), NULL)", tn);
+            }
+            return b.data;
+        }
         if (strcmp(callee->as.path.type_name, "Mutex") == 0 &&
             strcmp(callee->as.path.name, "new") == 0)
             return xstrdup("akt_mutex_new()");
@@ -1046,8 +1105,10 @@ static char *gen_expr(Gen *g, Expr *e) {
         case EX_CALL: return gen_call(g, e);
         case EX_MEMBER: {
             char *o = gen_expr(g, e->as.member.obj);
-            if (e->as.member.obj->type &&
-                (e->as.member.obj->type->kind == TY_REF || e->as.member.obj->type->kind == TY_PTR))
+            Type *ot = e->as.member.obj->type;
+            if (ot && ot->kind == TY_NAMED && is_managed_name(ot->name))
+                bprintf(&b, "((%s_s*)akt_shared_get(%s))->%s", ot->name, o, e->as.member.name);
+            else if (ot && (ot->kind == TY_REF || ot->kind == TY_PTR))
                 bprintf(&b, "(%s)->%s", o, e->as.member.name);
             else
                 bprintf(&b, "(%s).%s", o, e->as.member.name);
@@ -1210,9 +1271,32 @@ static void defer_push(Gen *g, Stmt *s) {
     f->items[f->count++] = s;
 }
 
+static int is_moved(Gen *g, const char *name) {
+    for (int i = 0; i < g->nmoved; i++)
+        if (strcmp(g->moved[i], name) == 0) return 1;
+    return 0;
+}
+
+static void mark_moved(Gen *g, const char *name) {
+    if (is_moved(g, name) || g->nmoved >= 128) return;
+    g->moved[g->nmoved++] = xstrdup(name);
+}
+
+static int is_unref_of_moved(Gen *g, Stmt *s) {
+    if (!s || s->kind != ST_EXPR) return 0;
+    Expr *e = s->as.expr;
+    if (!e || e->kind != EX_CALL || !e->as.call.callee || e->as.call.callee->kind != EX_IDENT) return 0;
+    if (strcmp(e->as.call.callee->as.sval, "akt_shared_unref") != 0) return 0;
+    if (e->as.call.argc != 1 || e->as.call.args[0]->kind != EX_IDENT) return 0;
+    return is_moved(g, e->as.call.args[0]->as.sval);
+}
+
 static void emit_defers_until(Gen *g, DeferFrame *stop) {
     for (DeferFrame *f = g->defers; f && f != stop; f = f->prev) {
-        for (int i = f->count - 1; i >= 0; i--) gen_stmt(g, f->items[i]);
+        for (int i = f->count - 1; i >= 0; i--) {
+            if (is_unref_of_moved(g, f->items[i])) continue;
+            gen_stmt(g, f->items[i]);
+        }
     }
 }
 static void emit_all_defers(Gen *g) { emit_defers_until(g, NULL); }
@@ -1228,7 +1312,10 @@ static void gen_block(Gen *g, Stmt *s) {
     line(g, "{");
     g->indent++;
     for (int i = 0; i < s->as.block.count; i++) gen_stmt(g, s->as.block.items[i]);
-    for (int i = frame.count - 1; i >= 0; i--) gen_stmt(g, frame.items[i]);
+    for (int i = frame.count - 1; i >= 0; i--) {
+        if (is_unref_of_moved(g, frame.items[i])) continue;
+        gen_stmt(g, frame.items[i]);
+    }
     g->indent--;
     line(g, "}");
     g->defers = frame.prev;
@@ -1240,6 +1327,18 @@ static void gen_var(Gen *g, Stmt *s) {
     Type *t = s->as.var.type;
     if (!t) t = type_named("int");
     record_var(g, s->as.var.name, t);
+    if (t->kind == TY_NAMED && is_managed_name(t->name)) {
+        if (s->as.var.init) {
+            char *v = gen_expr(g, s->as.var.init);
+            line(g, "AktShared* %s = %s;", s->as.var.name, v);
+            free(v);
+        } else {
+            line(g, "AktShared* %s = NULL;", s->as.var.name);
+        }
+        Expr *mid = mk_ident(s->as.var.name);
+        defer_push(g, mk_call_stmt1("akt_shared_unref", mid));
+        return;
+    }
     if (t->kind == TY_SHARED || t->kind == TY_WEAK) {
         Type *base = t->elem ? t->elem : type_named("int");
         int id = g->tmp++;
@@ -1496,6 +1595,14 @@ static void gen_stmt(Gen *g, Stmt *s) {
             Type *dt = s->as.assign.target->kind == EX_IDENT
                            ? decl_type(g, s->as.assign.target->as.sval)
                            : NULL;
+            if (dt && dt->kind == TY_NAMED && is_managed_name(dt->name) &&
+                s->as.assign.op == TK_ASSIGN) {
+                char *v = gen_expr(g, s->as.assign.value);
+                line(g, "akt_shared_unref(%s); %s = %s;",
+                     s->as.assign.target->as.sval, s->as.assign.target->as.sval, v);
+                free(v);
+                break;
+            }
             if (dt && dt->kind == TY_WEAK && s->as.assign.op == TK_ASSIGN &&
                 s->as.assign.value->kind == EX_IDENT && s->as.assign.value->shared_ref) {
                 line(g, "akt_shared_weak_unref(%s); %s = %s; akt_shared_weak_ref(%s);",
@@ -1532,6 +1639,11 @@ static void gen_stmt(Gen *g, Stmt *s) {
         }
         case ST_RETURN: {
             if (s->as.ret) {
+                if (s->as.ret->kind == EX_IDENT) {
+                    Type *rt = decl_type(g, s->as.ret->as.sval);
+                    if (rt && rt->kind == TY_NAMED && is_managed_name(rt->name))
+                        mark_moved(g, s->as.ret->as.sval);
+                }
                 char *v = gen_expr(g, s->as.ret);
                 emit_all_defers(g);
                 line(g, "return %s;", v);
@@ -1601,6 +1713,22 @@ static void gen_stmt(Gen *g, Stmt *s) {
 
 static void gen_struct(Gen *g, StructDecl *s) {
     if (s->from_header) return;
+    if (s->is_managed) {
+        line(g, "typedef struct %s_s {", s->name);
+        g->indent++;
+        for (int i = 0; i < s->nfields; i++) {
+            Field *f = &s->fields[i];
+            if (f->type->kind == TY_ARRAY)
+                line(g, "%s %s[%lld];", c_type(f->type->elem), f->name, f->type->array_len);
+            else
+                line(g, "%s %s;", c_type(f->type), f->name);
+        }
+        if (s->nfields == 0) line(g, "char _empty;");
+        g->indent--;
+        line(g, "} %s_s;", s->name);
+        line(g, "");
+        return;
+    }
     line(g, "typedef %s %s {", s->is_cunion ? "union" : "struct", s->name);
     g->indent++;
     for (int i = 0; i < s->nfields; i++) {
@@ -1645,7 +1773,8 @@ static void gen_proto(Gen *g, Func *f) {
     emit(g, "%s %s(", c_type(f->ret), func_c_name(f));
     int first = 1;
     if (f->is_method) {
-        emit(g, "%s* self", f->owner->name);
+        if (f->owner->is_managed) emit(g, "%s_s* self", f->owner->name);
+        else emit(g, "%s* self", f->owner->name);
         first = 0;
     }
     for (int i = 0; i < f->nparams; i++) {
@@ -1678,12 +1807,14 @@ static void gen_func(Gen *g, Func *f) {
     g->current = f;
     g->indent = 0;
     g->nvars = 0;
+    g->nmoved = 0;
     if (f->is_method) record_var(g, "self", type_ref(type_named(f->owner->name)));
     for (int i = 0; i < f->nparams; i++) record_var(g, f->params[i].name, f->params[i].type);
     emit(g, "%s %s(", c_type(f->ret), func_c_name(f));
     int first = 1;
     if (f->is_method) {
-        emit(g, "%s* self", f->owner->name);
+        if (f->owner->is_managed) emit(g, "%s_s* self", f->owner->name);
+        else emit(g, "%s* self", f->owner->name);
         first = 0;
     }
     for (int i = 0; i < f->nparams; i++) {
@@ -1939,6 +2070,11 @@ int generate_c(Program *prog, const char *output_path, const char *source_name) 
     g.nvars = 0;
     g.nmarks = 0;
     g.nthr = 0;
+    g.nmoved = 0;
+    g_nmanaged = 0;
+    for (int i = 0; i < prog->nstructs; i++)
+        if (prog->structs[i]->is_managed && g_nmanaged < 128)
+            g_managed[g_nmanaged++] = prog->structs[i]->name;
 
     fprintf(out, "/* generated by aktc %s from %s */\n", AKT_VERSION, source_name);
     fprintf(out, "#include \"akt_runtime.h\"\n");

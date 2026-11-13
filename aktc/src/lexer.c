@@ -11,6 +11,7 @@ typedef struct {
 static const Keyword keywords[] = {
     {"fn", TK_FN}, {"const", TK_CONST}, {"static", TK_STATIC},
     {"type", TK_TYPE}, {"struct", TK_STRUCT}, {"enum", TK_ENUM},
+    {"managed", TK_MANAGED},
     {"impl", TK_IMPL}, {"pub", TK_PUB}, {"use", TK_USE},
     {"if", TK_IF}, {"else", TK_ELSE}, {"while", TK_WHILE},
     {"for", TK_FOR}, {"in", TK_IN}, {"loop", TK_LOOP},

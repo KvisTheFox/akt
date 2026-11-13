@@ -15,6 +15,7 @@ katek run
 | `arithmetic.akt` | operators, integer and float math |
 | `collections.akt` | `Vector`, `Map`, `Set`, `Deque` |
 | `structs.akt` | structs, fields, methods, `static fn` |
+| `managed.akt` | `managed struct`, automatic refcounted destruction |
 | `errors.akt` | `Option`, `Result`, `?`, `??`, pattern matching |
 | `json.akt` | parse and serialize JSON |
 | `files.akt` | write/read files |

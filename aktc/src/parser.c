@@ -1356,6 +1356,14 @@ Program *parse_program(const char *src, const char *file) {
             match(&p, TK_SEMI);
             continue;
         }
+        if (cur(&p)->kind == TK_MANAGED) {
+            advance(&p);
+            if (cur(&p)->kind != TK_STRUCT)
+                fatal_at(file, cur(&p)->line, cur(&p)->col, "expected struct after managed");
+            parse_struct(&p, is_pub);
+            p.program->structs[p.program->nstructs - 1]->is_managed = 1;
+            continue;
+        }
         if (cur(&p)->kind == TK_STRUCT) {
             parse_struct(&p, is_pub);
             continue;

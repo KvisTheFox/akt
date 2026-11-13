@@ -187,6 +187,25 @@ int total = nums.reduce(0, |acc, x| acc + x)
 
 Closures as standalone values and `thread.spawn` capture are next.
 
+## Managed objects
+
+```akt
+managed struct Buffer {
+    i32 len
+}
+
+fn main() int {
+    Buffer b = Buffer::new(4)
+    println(f"{b.len}")
+    return 0
+}
+```
+
+`managed` structs are heap objects with an atomic refcount. The compiler
+releases them at scope exit and moves them on `return`; copying or
+passing them by value is rejected, and managed fields are forbidden so
+that cycles (and leaks) cannot happen. No `defer` is required.
+
 ## Memory
 
 - Local values are ordinary C values.

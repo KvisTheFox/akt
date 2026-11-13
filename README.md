@@ -123,6 +123,7 @@ Supported today:
 - structs, methods, `static fn`, enums with payloads;
 - fixed arrays, `Vector`, `Map`, `Set`, `Deque`;
 - `Option<T>`, `Result<T, E>`, `?`, `??`;
+- `managed struct` — refcounted heap objects, automatic release, cycle-free by design;
 - `defer`, arenas, `shared`/`weak`, `Mutex`, `Atomic<T>`;
 - closures in `filter`/`map`/`reduce` and `thread.spawn`;
 - `async`/`await` with `async.all`, `async.select`, `async.timeout`;
@@ -215,6 +216,7 @@ Known limitations of 1.0:
 
 - no user-defined generics beyond the built-in containers;
 - `async` runs on OS threads (no separate executor yet);
+- managed objects are single-owner: not shareable or passable yet;
 - no full borrow checker for `^T`/`weak`;
 - the header importer does not parse bitfields or complex declarators;
 - no package registry yet (dependencies come from existing providers).

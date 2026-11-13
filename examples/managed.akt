@@ -1,0 +1,21 @@
+managed struct Counter {
+    i32 value
+    string label
+
+    fn bump() {
+        self.value += 1
+    }
+}
+
+fn make() Counter {
+    Counter c = Counter::new(0, "counter")
+    c.bump()
+    return c
+}
+
+fn main() int {
+    Counter c = make()
+    c.bump()
+    println(f"{c.label} = {c.value}")
+    return 0
+}

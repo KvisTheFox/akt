@@ -12,6 +12,7 @@ typedef enum {
     TK_EOF = 0,
     TK_IDENT, TK_INT, TK_FLOAT, TK_STRING, TK_FSTRING, TK_CHAR,
     TK_FN, TK_CONST, TK_STATIC, TK_TYPE, TK_STRUCT, TK_ENUM, TK_IMPL,
+    TK_MANAGED,
     TK_PUB, TK_USE, TK_IF, TK_ELSE, TK_WHILE, TK_FOR, TK_IN, TK_LOOP,
     TK_SWITCH, TK_CASE, TK_DEFAULT, TK_BREAK, TK_CONTINUE, TK_RETURN,
     TK_DEFER, TK_ARENA, TK_SHARED, TK_WEAK, TK_MANUAL, TK_AUTO,
@@ -213,6 +214,7 @@ typedef struct StructDecl {
     int from_binding;
     int from_header;
     int imported;
+    int is_managed;
 } StructDecl;
 
 typedef struct EnumDecl {

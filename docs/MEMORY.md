@@ -1,7 +1,8 @@
 # Memory model
 
-> Status: **design**. The current preview (0.9) uses the manual model
-> described below. The automatic system is the main goal for 1.0.
+> Status: **partially implemented in 0.9** (`managed struct`).
+> Escape analysis, weak managed references and the debug allocator are
+> still to do; they are the main goal for 1.0.
 
 ## Goals
 
@@ -11,7 +12,46 @@
 - deterministic destruction, suitable for systems and games;
 - manual control remains available for hot paths and C interop.
 
-## Current model (0.9)
+## Implemented in 0.9: `managed struct`
+
+```akt
+managed struct Counter {
+    i32 value
+
+    fn bump() {
+        self.value += 1
+    }
+}
+
+fn make() Counter {
+    Counter c = Counter::new(0)
+    c.bump()
+    return c          // moved to the caller, not copied
+}
+
+fn main() int {
+    Counter c = make()
+    c.bump()
+    println(f"{c.value}")
+    return 0
+}
+```
+
+- `T::new(...)` allocates a refcounted heap object;
+- the compiler emits `akt_shared_unref` at scope exit, so there is no
+  `defer` to write;
+- returning moves the object: the callee does not release it, the caller
+  owns it;
+- copying (`Node b = a`) and passing managed values to functions are
+  rejected at compile time;
+- a `managed` field is rejected: the strong reference graph cannot have
+  cycles, so refcounting cannot leak;
+- field access and methods dereference the handle automatically.
+
+This is the first slice of the automatic model: single-owner,
+refcounted, deterministic, no GC and no manual `unref`.
+
+## Manual model (still available)
 
 - `defer` — LIFO cleanup on block exit and before `return`;
 - `arena` — bulk allocation freed at scope exit;
