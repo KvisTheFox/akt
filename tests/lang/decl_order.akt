@@ -1,0 +1,11 @@
+fn main() int {
+    int a = 1
+    println(f"{a}")
+    int b = 2
+    println(f"{b}")
+    if (a < b) {
+        string s = "x"
+        println(s)
+    }
+    return 0
+}

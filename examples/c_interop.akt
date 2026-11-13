@@ -1,0 +1,12 @@
+cinclude <stdio.h>
+cinclude <math.h>
+cinclude <string.h>
+clink "m"
+
+fn main() int {
+    c.printf("hello from C: %d\n", 42)
+    f64 s = c.sin(3.141592653589793 / 2.0)
+    println(f"sin = {s}")
+    println(f"strlen = {c.strlen("hello")}")
+    return 0
+}

@@ -1,0 +1,7 @@
+struct P { i32 x }
+
+fn main() int {
+    P p = P { x: 1 }
+    println(p.y)
+    return 0
+}

@@ -1,0 +1,15 @@
+const i64 N = 16777216
+[u8; 16777216] data
+
+fn main() int {
+    for (i in 0..N) {
+        data[i] = ((i * 31 + 7) % 251) as u8
+    }
+    u64 h = 1469598103934665603 as u64
+    for (i in 0..N) {
+        h = h ^ (data[i] as u64)
+        h = h * 1099511628211 as u64
+    }
+    println(f"hash {(h % 1000000007) as i64}")
+    return 0
+}

@@ -1,0 +1,9 @@
+fn fib(i64 n) i64 {
+    if (n < 2) { return n }
+    return fib(n - 1) + fib(n - 2)
+}
+
+fn main() int {
+    println(f"fib {fib(32)}")
+    return 0
+}

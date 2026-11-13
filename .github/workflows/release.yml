@@ -1,0 +1,129 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - name: Build
+        run: |
+          xmake f -y -m release --toolchain=clang-cl
+          xmake build
+
+      - name: Test
+        shell: pwsh
+        run: ./tests/run.ps1
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $ver = (Get-Content VERSION).Trim()
+          $stage = "payload-stage"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item bin, runtime, docs, examples, std, benchmarks, scripts, assets -Destination $stage -Recurse
+          Copy-Item README.md, README.ru.md, VERSION, CHANGELOG.md, LICENSE, LICENSE-EXCEPTION, CONTRIBUTING.md -Destination $stage
+          Remove-Item "$stage\bin\akt-setup.exe","$stage\bin\*.pdb","$stage\bin\*.lib","$stage\bin\*.ilk" -ErrorAction SilentlyContinue
+          Get-ChildItem $stage -Recurse -Directory -Filter ".kache" | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+          tar.exe -a -c -f payload.zip -C $stage .
+          $exe = [IO.File]::ReadAllBytes("bin\akt-setup.exe")
+          $zip = [IO.File]::ReadAllBytes("payload.zip")
+          $magic = New-Object byte[] 12
+          [Text.Encoding]::ASCII.GetBytes("AKTPAYLOAD1").CopyTo($magic, 0)
+          $size = [BitConverter]::GetBytes([int64]$zip.Length)
+          $out = New-Object byte[] ($exe.Length + $zip.Length + 20)
+          [Array]::Copy($exe, 0, $out, 0, $exe.Length)
+          [Array]::Copy($zip, 0, $out, $exe.Length, $zip.Length)
+          [Array]::Copy($size, 0, $out, $exe.Length + $zip.Length, 8)
+          [Array]::Copy($magic, 0, $out, $exe.Length + $zip.Length + 8, 12)
+          [IO.File]::WriteAllBytes("akt-$ver-setup.exe", $out)
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: akt-windows
+          path: akt-*-setup.exe
+
+  unix:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux
+          - os: macos-latest
+            name: macos
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - name: Build
+        run: |
+          xmake f -y -m release
+          xmake build
+
+      - name: Test
+        run: sh tests/run.sh
+
+      - name: Package
+        run: |
+          ver=$(cat VERSION)
+          name="akt-${ver}-${{ matrix.name }}-$(uname -m)"
+          mkdir -p "$name"
+          cp -R bin runtime docs examples std benchmarks scripts assets "$name"/
+          cp README.md README.ru.md VERSION CHANGELOG.md LICENSE LICENSE-EXCEPTION CONTRIBUTING.md "$name"/
+          find "$name" -name ".kache" -type d -prune -exec rm -rf {} +
+          tar czf "$name.tar.gz" "$name"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: akt-${{ matrix.name }}
+          path: akt-*.tar.gz
+
+  source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Source archive
+        run: |
+          ver=$(cat VERSION)
+          git archive --format=tar.gz --prefix="akt-${ver}-src/" -o "akt-${ver}-src.tar.gz" HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: akt-source
+          path: akt-*-src.tar.gz
+
+  publish:
+    needs: [windows, unix, source]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Collect files
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name "*.exe" -o -name "*.tar.gz" \) -exec cp {} release/ \;
+          ls -la release
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true

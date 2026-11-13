@@ -1,0 +1,12 @@
+fn main() int {
+    Sqlite db = sqlite.open(":memory:")
+    db.exec("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)")
+    db.exec("INSERT INTO users (name) VALUES ('Alice')")
+    db.exec("INSERT INTO users (name) VALUES ('Bob')")
+    auto rows = db.query("SELECT id, name FROM users")
+    for (row in rows) {
+        println(row)
+    }
+    db.close()
+    return 0
+}

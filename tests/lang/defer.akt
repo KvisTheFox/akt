@@ -1,0 +1,14 @@
+fn work(int x) int {
+    defer println("cleanup 1")
+    if (x < 0) {
+        return -1
+    }
+    defer println("cleanup 2")
+    return x * 2
+}
+
+fn main() int {
+    println(f"result = {work(5)}")
+    println(f"result = {work(-1)}")
+    return 0
+}

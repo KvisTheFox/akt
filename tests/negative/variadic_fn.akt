@@ -1,0 +1,7 @@
+fn variadic(int a, ...) int {
+    return a
+}
+
+fn main() int {
+    return variadic(1)
+}

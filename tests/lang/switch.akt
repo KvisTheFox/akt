@@ -1,0 +1,26 @@
+enum Color { Red, Green, Blue }
+
+fn name(Color c) string {
+    switch (c) {
+        case Color::Red:
+            return "red"
+        case Color::Green:
+            return "green"
+        default:
+            return "blue"
+    }
+}
+
+fn main() int {
+    Color c = Color::Green
+    println(f"c = {name(c)}")
+    switch (c) {
+        case Color::Red:
+            println("warm")
+        case Color::Green:
+            println("cool")
+        default:
+            println("other")
+    }
+    return 0
+}

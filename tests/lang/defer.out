@@ -1,0 +1,5 @@
+cleanup 2
+cleanup 1
+result = 10
+cleanup 1
+result = -1

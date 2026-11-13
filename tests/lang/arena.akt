@@ -1,0 +1,6 @@
+fn main() int {
+    arena frame
+    defer println("cleanup")
+    println("arena ok")
+    return 0
+}

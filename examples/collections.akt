@@ -1,0 +1,20 @@
+fn main() int {
+    Vector<i32> xs = [3, 1, 4, 1, 5]
+    xs.push(9)
+    println(f"vector: {xs.len()} items, first = {xs[0]}, last = {xs[xs.len() - 1]}")
+
+    Map<string, i32> ages = { "ada": 36, "alan": 41 }
+    ages.set("grace", 85)
+    println(f"map: ada = {ages.get("ada") ?? 0}, grace = {ages.get("grace") ?? 0}")
+
+    Set<string> tags = ["fast", "small", "fast"]
+    tags.add("portable")
+    println(f"set: {tags.len()} unique, has fast = {tags.contains("fast")}")
+
+    Deque<i32> dq = []
+    dq.push_back(2)
+    dq.push_front(1)
+    dq.push_back(3)
+    println(f"deque: front = {dq.front()}, back = {dq.back()}, len = {dq.len()}")
+    return 0
+}

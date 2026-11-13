@@ -1,0 +1,8 @@
+fn main() int {
+    Json doc = json.parse("{\"name\":\"akt\",\"version\":1,\"tags\":[\"c\",\"fast\"]}")
+    println(f"name = {doc["name"]}")
+    println(f"version = {doc["version"]}")
+    println(f"tag[1] = {doc["tags"][1]}")
+    println(json.stringify(doc))
+    return 0
+}

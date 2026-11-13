@@ -1,0 +1,8 @@
+fn main() int {
+    shared i32 value = 42
+    weak i32 w = value
+    println(f"value = {value}, weak = {w}")
+    value = 7
+    println(f"weak after = {w}")
+    return 0
+}

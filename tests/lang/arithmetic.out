@@ -1,0 +1,8 @@
+sum = 12
+diff = 2
+mul = 35
+div = 1
+mod = 2
+pow = 1024
+cmp = true
+ternary = yes

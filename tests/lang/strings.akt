@@ -1,0 +1,21 @@
+fn main() int {
+    string s = "a,b,c"
+    println(s.replace(",", "-"))
+    println(s.repeat(2))
+    println(f"find = {s.find("b")}")
+    println(s.pad_left(8, '.'))
+    println(s.pad_right(8, '.'))
+
+    Vector<string> parts = s.split(",")
+    println(f"parts = {parts.len()}")
+    for (p in parts) {
+        print(f"[{p}]")
+    }
+    println("")
+
+    println(f"PI = {PI}")
+    println(f"sqrt2 = {sqrt(2.0)}")
+    println(f"parsed = {fmt.parse_int("42") + 1}")
+    println(f"parsed f = {fmt.parse_float("3.5")}")
+    return 0
+}

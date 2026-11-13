@@ -1,0 +1,10 @@
+fn worker() {
+    println("worker running")
+}
+
+fn main() int {
+    Handle h = thread.spawn(worker)
+    thread.join(h)
+    println("joined")
+    return 0
+}

@@ -1,0 +1,7 @@
+use math
+
+fn main() int {
+    println(f"add = {math.add(2, 3)}")
+    println(f"mul = {math.mul(4, 5)}")
+    return 0
+}

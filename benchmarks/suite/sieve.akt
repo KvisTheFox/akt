@@ -1,0 +1,25 @@
+const i64 N = 5000000
+[u8; 5000000] sieve
+
+fn main() int {
+    for (i in 0..N) { sieve[i] = 1 }
+    sieve[0] = 0
+    sieve[1] = 0
+    i64 i = 2
+    while (i * i < N) {
+        if (sieve[i] == 1) {
+            i64 j = i * i
+            while (j < N) {
+                sieve[j] = 0
+                j += i
+            }
+        }
+        i += 1
+    }
+    i64 count = 0
+    for (k in 0..N) {
+        if (sieve[k] == 1) { count += 1 }
+    }
+    println(f"sieve {count}")
+    return 0
+}

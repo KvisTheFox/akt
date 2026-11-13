@@ -1,0 +1,9 @@
+cinclude <windows.h>
+cinclude <GL/gl.h>
+clink "opengl32"
+
+fn main() int {
+    c.glGetString(0x1F02)
+    println("OpenGL linked")
+    return 0
+}

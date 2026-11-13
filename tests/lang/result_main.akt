@@ -1,0 +1,18 @@
+fn fail() Result<void, string> {
+    return Err("no")
+}
+
+fn run(int ok) Result<void, string> {
+    if (!ok) {
+        fail()?
+    }
+    println("body")
+    return Ok(())
+}
+
+fn main() Result<void, string> {
+    run(1)?
+    run(0)?
+    println("unreachable")
+    return Ok(())
+}

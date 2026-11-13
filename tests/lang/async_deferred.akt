@@ -1,0 +1,11 @@
+async fn compute(int x) int {
+    await sleep_ms(5)
+    return x * 2
+}
+
+fn main() int {
+    auto a = compute(3)
+    auto b = compute(4)
+    println(f"a = {await a}, b = {await b}")
+    return 0
+}

@@ -1,0 +1,10 @@
+[package]
+name = "akt-3dgame"
+version = "1.0.0"
+edition = "2026"
+
+[native]
+link = ["glfw3", "opengl32", "gdi32", "user32", "shell32"]
+
+[native.dependencies]
+glfw = { provider = "xrepo", version = "3.4" }

@@ -1,0 +1,11 @@
+fn main() int {
+    string path = "akt_example.txt"
+    io.write_to_string(path, "hello from akt\nsecond line\n")
+
+    if (io.exists(path)) {
+        string text = io.read_to_string(path)
+        print(text)
+        println(f"bytes = {text.len()}")
+    }
+    return 0
+}

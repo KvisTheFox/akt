@@ -1,0 +1,5 @@
+set len = 4
+has 2 = true
+after remove = 3, has 2 = false
+1 3 4 
+front = 1, back = 3, len = 3

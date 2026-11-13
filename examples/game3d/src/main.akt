@@ -1,0 +1,272 @@
+﻿// akt 3d — a small 3D game on GLFW + OpenGL 1.1
+//
+// Collect the cubes before the timer runs out.
+// WASD — move, mouse — look, R — restart, Esc — quit.
+// Score and time are shown in the window title.
+
+cinclude <GLFW/glfw3.h>
+cinclude <GL/gl.h>
+
+const i32 C_COLOR_BIT = 16384
+const i32 C_DEPTH_BIT = 256
+const i32 C_DEPTH_TEST = 2929
+const i32 C_PROJECTION = 5889
+const i32 C_MODELVIEW = 5888
+const i32 C_LINES = 1
+const i32 C_QUADS = 7
+
+struct Cube {
+    f64 x
+    f64 z
+}
+
+struct Game {
+        *GLFWwindow win
+        f64 px
+        f64 pz
+        f64 yaw
+        f64 pitch
+        f64 last_mx
+        f64 last_my
+        bool mouse_ready
+        i32 score
+        f64 game_end
+        bool playing
+        u64 seed
+        [Cube; 5] cubes
+
+
+    fn rnd() f64 {
+        self.seed = self.seed * (6364136223846793005 as u64) + (1442695040888963407 as u64)
+        u64 bits = self.seed >> 33
+        i64 small = bits as i64
+        f64 v = small as f64
+        return v / 2147483648.0
+}
+
+fn spawn(i64 i) {
+    f64 nx = self.rnd() * 16.0 - 8.0
+    f64 nz = self.rnd() * 16.0 - 8.0
+    f64 dx = nx - self.px
+    f64 dz = nz - self.pz
+    while (dx * dx + dz * dz < 9.0) {
+        nx = self.rnd() * 16.0 - 8.0
+        nz = self.rnd() * 16.0 - 8.0
+        dx = nx - self.px
+        dz = nz - self.pz
+    }
+    self.cubes[i].x = nx
+    self.cubes[i].z = nz
+}
+
+fn reset() {
+    self.score = 0
+    self.playing = true
+    self.px = 0.0
+    self.pz = 8.0
+    self.yaw = 0.0
+    self.pitch = 0.0
+    self.mouse_ready = false
+    self.seed = 88172645463325252 as u64
+    self.game_end = glfwGetTime() + 60.0
+    for (i in 0..5) {
+        self.spawn(i)
+    }
+}
+
+fn update(f64 dt) {
+    if (!self.playing) {
+        if (glfwGetKey(self.win, GLFW_KEY_R) == 1) { self.reset() }
+        return
+    }
+    f64 speed = 4.5 * dt
+    f64 rad = self.yaw * 3.14159265358979 / 180.0
+    f64 fx = c.sin(rad)
+    f64 fz = -c.cos(rad)
+    f64 rx = c.cos(rad)
+    f64 rz = c.sin(rad)
+
+    if (glfwGetKey(self.win, GLFW_KEY_W) == 1) {
+        self.px += fx * speed
+        self.pz += fz * speed
+    }
+    if (glfwGetKey(self.win, GLFW_KEY_S) == 1) {
+        self.px -= fx * speed
+        self.pz -= fz * speed
+    }
+    if (glfwGetKey(self.win, GLFW_KEY_D) == 1) {
+        self.px += rx * speed
+        self.pz += rz * speed
+    }
+    if (glfwGetKey(self.win, GLFW_KEY_A) == 1) {
+        self.px -= rx * speed
+        self.pz -= rz * speed
+    }
+    if (glfwGetKey(self.win, GLFW_KEY_ESCAPE) == 1) {
+        glfwSetWindowShouldClose(self.win, 1)
+    }
+
+    f64 mx = 0.0
+    f64 my = 0.0
+    glfwGetCursorPos(self.win, &mx, &my)
+    if (!self.mouse_ready) {
+        self.last_mx = mx
+        self.last_my = my
+        self.mouse_ready = true
+    } else {
+        self.yaw += (mx - self.last_mx) * 0.18
+        self.pitch -= (my - self.last_my) * 0.18
+        if (self.pitch > 85.0) { self.pitch = 85.0 }
+        if (self.pitch < -85.0) { self.pitch = -85.0 }
+        self.last_mx = mx
+        self.last_my = my
+    }
+
+    if (self.px < -9.5) { self.px = -9.5 }
+    if (self.px > 9.5) { self.px = 9.5 }
+    if (self.pz < -9.5) { self.pz = -9.5 }
+    if (self.pz > 9.5) { self.pz = 9.5 }
+
+    for (i in 0..5) {
+        f64 dx = self.cubes[i].x - self.px
+        f64 dz = self.cubes[i].z - self.pz
+        if (dx * dx + dz * dz < 1.0) {
+            self.score += 1
+            self.spawn(i)
+        }
+    }
+
+    if (glfwGetTime() > self.game_end) {
+        self.playing = false
+    }
+}
+
+fn draw() {
+    f64 now = glfwGetTime()
+    f64 aspect = 1280.0 / 720.0
+    f64 fov = 70.0 * 3.14159265358979 / 180.0
+    f64 near = 0.1
+    f64 top = near * c.tan(fov * 0.5)
+    f64 right = top * aspect
+
+    c.glViewport(0, 0, 1280, 720)
+    c.glClearColor(0.05, 0.07, 0.1, 1.0)
+    c.glClear(C_COLOR_BIT | C_DEPTH_BIT)
+    c.glEnable(C_DEPTH_TEST)
+
+    c.glMatrixMode(C_PROJECTION)
+    c.glLoadIdentity()
+    c.glFrustum(-right, right, -top, top, near, 100.0)
+    c.glMatrixMode(C_MODELVIEW)
+    c.glLoadIdentity()
+    c.glRotatef(self.pitch, 1.0, 0.0, 0.0)
+    c.glRotatef(self.yaw, 0.0, 1.0, 0.0)
+    c.glTranslatef(-self.px, -1.6, -self.pz)
+
+    draw_floor()
+    for (i in 0..5) {
+        c.glPushMatrix()
+        c.glTranslatef(self.cubes[i].x, 0.6, self.cubes[i].z)
+        c.glRotatef(now * 70.0, 0.3, 1.0, 0.2)
+        c.glScalef(0.9, 0.9, 0.9)
+        draw_cube()
+        c.glPopMatrix()
+    }
+}}
+
+fn draw_cube() {
+    c.glBegin(C_QUADS)
+    c.glColor3f(1.0, 0.35, 0.25)
+    c.glVertex3f(-0.5, -0.5, 0.5)
+    c.glVertex3f(0.5, -0.5, 0.5)
+    c.glVertex3f(0.5, 0.5, 0.5)
+    c.glVertex3f(-0.5, 0.5, 0.5)
+    c.glColor3f(0.85, 0.2, 0.15)
+    c.glVertex3f(0.5, -0.5, -0.5)
+    c.glVertex3f(-0.5, -0.5, -0.5)
+    c.glVertex3f(-0.5, 0.5, -0.5)
+    c.glVertex3f(0.5, 0.5, -0.5)
+    c.glColor3f(0.9, 0.55, 0.1)
+    c.glVertex3f(-0.5, -0.5, -0.5)
+    c.glVertex3f(-0.5, -0.5, 0.5)
+    c.glVertex3f(-0.5, 0.5, 0.5)
+    c.glVertex3f(-0.5, 0.5, -0.5)
+    c.glColor3f(0.95, 0.7, 0.2)
+    c.glVertex3f(0.5, -0.5, 0.5)
+    c.glVertex3f(0.5, -0.5, -0.5)
+    c.glVertex3f(0.5, 0.5, -0.5)
+    c.glVertex3f(0.5, 0.5, 0.5)
+    c.glColor3f(1.0, 0.85, 0.35)
+    c.glVertex3f(-0.5, 0.5, 0.5)
+    c.glVertex3f(0.5, 0.5, 0.5)
+    c.glVertex3f(0.5, 0.5, -0.5)
+    c.glVertex3f(-0.5, 0.5, -0.5)
+    c.glColor3f(0.5, 0.25, 0.1)
+    c.glVertex3f(-0.5, -0.5, -0.5)
+    c.glVertex3f(0.5, -0.5, -0.5)
+    c.glVertex3f(0.5, -0.5, 0.5)
+    c.glVertex3f(-0.5, -0.5, 0.5)
+    c.glEnd()
+}
+
+fn draw_floor() {
+    c.glLineWidth(1.0)
+    c.glColor3f(0.25, 0.3, 0.35)
+    c.glBegin(C_LINES)
+    for (i in 0..21) {
+        f64 p = (i as f64) - 10.0
+        c.glVertex3f(p, 0.0, -10.0)
+        c.glVertex3f(p, 0.0, 10.0)
+        c.glVertex3f(-10.0, 0.0, p)
+        c.glVertex3f(10.0, 0.0, p)
+    }
+    c.glEnd()
+}
+
+fn main() int {
+    if (glfwInit() == 0) {
+        println("glfwInit failed")
+        return 1
+    }
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2)
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1)
+
+    Game g
+    g.win = glfwCreateWindow(1280, 720, "akt 3d - collect the cubes", null, null)
+    if (g.win == null) {
+        println("glfwCreateWindow failed")
+        glfwTerminate()
+        return 1
+    }
+    glfwMakeContextCurrent(g.win)
+    glfwSwapInterval(1)
+    glfwSetInputMode(g.win, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
+    g.reset()
+
+    f64 last = glfwGetTime()
+    while (glfwWindowShouldClose(g.win) == 0) {
+        f64 now = glfwGetTime()
+        f64 dt = now - last
+        last = now
+        if (dt > 0.05) { dt = 0.05 }
+
+        g.update(dt)
+        g.draw()
+        glfwSwapBuffers(g.win)
+        glfwPollEvents()
+
+        f64 left = g.game_end - now
+        if (left < 0.0) { left = 0.0 }
+        if (g.playing) {
+            string t = f"akt 3d - score {g.score} - {left:.0} s left"
+            glfwSetWindowTitle(g.win, t)
+        } else {
+            string t = f"akt 3d - time up! score {g.score} - press R"
+            glfwSetWindowTitle(g.win, t)
+        }
+    }
+
+    glfwTerminate()
+    println(f"final score = {g.score}")
+    return 0
+}

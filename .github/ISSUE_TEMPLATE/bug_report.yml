@@ -1,0 +1,47 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please include a minimal `.akt` file if possible.
+  - type: input
+    id: version
+    attributes:
+      label: akt version
+      description: Output of `aktc --version`
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Android
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Expected behavior and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Commands and source code
+      render: shell
+  - type: textarea
+    id: logs
+    attributes:
+      label: Compiler output
+      description: Paste the full error message
+      render: shell

@@ -1,0 +1,4 @@
+fn main() int {
+    println(missing_name)
+    return 0
+}

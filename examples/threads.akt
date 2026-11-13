@@ -1,0 +1,22 @@
+fn worker() {
+    println("worker: start")
+    thread.sleep_ms(20)
+    println("worker: done")
+}
+
+fn main() int {
+    Handle h = thread.spawn(worker)
+    thread.join(h)
+    println("main: joined")
+
+    shared i32 hits = 0
+    shared Mutex m = Mutex::new()
+    Handle h2 = thread.spawn(|| {
+        m.lock()
+        defer m.unlock()
+        hits += 1
+    })
+    thread.join(h2)
+    println(f"hits = {hits}")
+    return 0
+}

@@ -1,0 +1,8 @@
+fn main() int {
+    f64 pi = 3.14159265358979
+    f64 x = 2.0
+    println(f"pi = {pi:.2}, x = {x:.3}, plain = {pi}")
+    int n = 7
+    println(f"n = {n}, sum = {n + 1}")
+    return 0
+}

@@ -1,0 +1,6 @@
+pid > 0 = true
+rand >= 0 = true
+fnv = -6615550055289275125
+b64 = aGVsbG8=
+dec = hello
+files >= 0 = true

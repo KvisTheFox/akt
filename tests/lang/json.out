@@ -1,0 +1,4 @@
+name = Alice
+age = 30
+tag0 = a
+{"name":"Alice","age":30,"tags":["a","b"]}

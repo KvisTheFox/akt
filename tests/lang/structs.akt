@@ -1,0 +1,20 @@
+struct Vec2 {
+    f64 x
+    f64 y
+
+    fn length() f64 {
+        return sqrt(self.x * self.x + self.y * self.y)
+    }
+
+    static fn zero() Vec2 {
+        return Vec2 { x: 0.0, y: 0.0 }
+    }
+}
+
+fn main() int {
+    Vec2 v = Vec2 { x: 3.0, y: 4.0 }
+    println(f"length = {v.length()}")
+    Vec2 z = Vec2::zero()
+    println(f"zero = ({z.x}, {z.y})")
+    return 0
+}

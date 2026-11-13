@@ -1,0 +1,19 @@
+fn main() int {
+    shared i32 live = 5
+    weak i32 wl = live
+    switch (wl.upgrade()) {
+        case Some(v): println(f"alive = {v}")
+        case None: println("alive = expired")
+    }
+
+    weak i32 dead
+    {
+        shared i32 tmp = 9
+        dead = tmp
+    }
+    switch (dead.upgrade()) {
+        case Some(v): println(f"dead = {v}")
+        case None: println("dead = expired")
+    }
+    return 0
+}

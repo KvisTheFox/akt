@@ -1,0 +1,13 @@
+cfn strlen(*const cchar s) size
+
+cstruct Pair {
+    i32 a
+    i32 b
+}
+
+fn main() int {
+    int len = strlen("abc") as int
+    Pair p = Pair { a: 4, b: 6 }
+    println(f"len = {len}, sum = {p.a + p.b}")
+    return 0
+}

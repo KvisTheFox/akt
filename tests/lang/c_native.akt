@@ -1,0 +1,7 @@
+cinclude <string.h>
+
+fn main() int {
+    int n = strlen("hello") as int
+    println(f"len = {n}")
+    return 0
+}

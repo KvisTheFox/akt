@@ -1,0 +1,17 @@
+use std.io
+use std.path
+use std.env
+use std.time
+
+fn main() int {
+    string path = path.join(env.cwd(), "akt_std_demo.txt")
+    io.write_to_string(path, "hello from akt std\n")
+    string data = io.read_to_string(path)
+    print(data)
+
+    println(f"cwd = {env.cwd()}")
+    println(f"basename = {path.basename(path)}")
+    println(f"extension = {path.extension(path)}")
+    println(f"now = {time.now_ms()} ms")
+    return 0
+}

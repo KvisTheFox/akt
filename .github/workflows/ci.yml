@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        run: xmake f -y -m release --toolchain=clang-cl
+
+      - name: Configure (Unix)
+        if: runner.os != 'Windows'
+        run: xmake f -y -m release
+
+      - name: Build
+        run: xmake build
+
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          ./bin/aktc --version
+          ./bin/aktc run tests/lang/hello.akt
+          ./bin/aktc run tests/lang/strings.akt
+          ./bin/aktc run tests/lang/structs.akt
+
+      - name: Language tests (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./tests/run.ps1
+
+      - name: Language tests (Unix)
+        if: runner.os != 'Windows'
+        run: sh tests/run.sh
+
+      - name: Fuzz (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./tests/fuzz.ps1

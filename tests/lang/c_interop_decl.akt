@@ -1,0 +1,27 @@
+cinclude <string.h>
+cinclude <stdio.h>
+
+cfn strlen(*const cchar s) size
+cfn snprintf(*cchar buf, size n, *const cchar fmt, ...) int
+
+cstruct Pair {
+    i32 a
+    i32 b
+}
+
+cunion Bits {
+    u32 u
+    f32 f
+}
+
+fn main() int {
+    int len = strlen("hello") as int
+    println(f"len = {len}")
+
+    Pair p = Pair { a: 2, b: 3 }
+    println(f"pair = {p.a + p.b}")
+
+    Bits b = Bits { u: 1065353216 }
+    println(f"bits = {b.f}")
+    return 0
+}

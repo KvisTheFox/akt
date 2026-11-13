@@ -1,0 +1,53 @@
+struct Point {
+    f64 x
+    f64 y
+}
+
+fn add(int a, int b) int {
+    return a + b
+}
+
+fn main() int {
+    int x = 10
+    int y = 20
+    println(f"add = {add(x, y)}")
+
+    for (i in 0..5) {
+        print(f"{i} ")
+    }
+    println("")
+
+    [i32; 5] arr = [10, 20, 30, 40, 50]
+    i32 total = 0
+    for (v in arr) {
+        total += v
+    }
+    println(f"array total = {total}, len = {len(arr)}")
+
+    Vector<i32> nums = [1, 2, 3]
+    nums.push(4)
+    nums.push(5)
+    println(f"vector len = {nums.len()}, third = {nums[2]}")
+    for (n in nums) {
+        print(f"{n} ")
+    }
+    println("")
+
+    string name = "  Akt Language  "
+    println(f"trimmed = '{name.trim()}', upper = '{name.trim().to_upper()}'")
+    println(f"contains = {name.contains("Language")}, len = {name.len()}")
+
+    Point p = Point { x: 1.5, y: 2.5 }
+    println(f"point = ({p.x}, {p.y})")
+
+    i32 n = 0
+    while (n < 3) {
+        n += 1
+        if (n == 2) { continue }
+        println(f"n = {n}")
+    }
+
+    auto dynamic = [7, 8, 9]
+    println(f"auto array len = {len(dynamic)}")
+    return 0
+}

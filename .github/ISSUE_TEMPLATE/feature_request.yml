@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest a language feature, library or tool improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do and what is missing?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Syntax, API or behavior you would like to see
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: How do you work around it today?

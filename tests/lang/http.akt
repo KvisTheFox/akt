@@ -1,0 +1,5 @@
+fn main() int {
+    string body = http.get("https://example.com")
+    println(f"has html = {body.contains("<html")}")
+    return 0
+}

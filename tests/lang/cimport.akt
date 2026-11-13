@@ -1,0 +1,6 @@
+cimport "cimport_demo.h"
+
+fn main() int {
+    println(f"triple = {triple(14)}")
+    return 0
+}

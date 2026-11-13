@@ -1,0 +1,22 @@
+akt Output Exception, version 1.0
+
+akt itself (the compiler, runtime, standard library, tools and
+documentation) is licensed under the GNU General Public License,
+version 3 or later. See LICENSE.
+
+As a special exception, using akt to compile your own source code does
+not make the resulting program a derivative work of akt, and the
+resulting program is not covered by the GPL. You may license programs
+you write in akt under any terms you like, including proprietary and
+closed-source terms. This includes the parts of the akt runtime that
+are linked into your program.
+
+This exception does not apply to akt itself. If you fork, modify or
+redistribute akt or a modified version of it, the GPL applies: the
+complete corresponding source code must be made available under the
+same license (GPL-3.0-or-later), and forks must remain open source.
+
+In short:
+
+- programs written in akt: any license, including closed source;
+- akt and its forks: GPL-3.0-or-later, open source.

@@ -1,0 +1,14 @@
+type Count = i64
+type Small = u32
+
+cstruct Stats {
+    Count total
+    Small flags
+}
+
+fn main() int {
+    Count n = 41
+    Stats s = Stats { total: 7, flags: 3 }
+    println(f"{n + 1} {s.total} {s.flags}")
+    return 0
+}

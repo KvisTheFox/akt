@@ -1,0 +1,15 @@
+fn main() int {
+    shared i32 counter = 0
+    counter += 1
+    counter += 2
+    println(f"counter = {counter}")
+
+    shared string name = "akt"
+    println(f"name = {name}")
+
+    shared Mutex m = Mutex::new()
+    m.lock()
+    println("locked")
+    m.unlock()
+    return 0
+}
